@@ -5,6 +5,7 @@
 # class Game ゲーム
 
 import random
+import time
 
 
 class Card():
@@ -64,28 +65,129 @@ class Hand():
         ace = False
         for card in self.cards:
             self.value += int(card.number['value'])
-            print(card, card.suit, card.number['key'], card.number['value'])
-            print(type(card))
             if card.number['key'] == 'A':
                 ace = True
 
         if ace and self.value > 21:
             self.value -= 10
 
-        return print(self.value)
+        return self.value
 
     def is_blackjack(self):
         return self.calc_value() == 21
 
+    def show(self, show_two_cards=False):
+        if self.dealer:
+            print('Dealer hand:')
+        else:
+            print('Your hand:')
 
-deck = Deck()
-deck.shuffle()
+        # print(f"{'Dealer' if self.dealer else 'Your'}hand:")一行で書くとき
 
-player_hand = Hand()
-dealer_hand = Hand(dealer=True)
+        for index, card in enumerate(self.cards):
+            if index == 0 and self.dealer and not show_two_cards and not self.is_blackjack():
+                pass
+            else:
+                print(f"{card.suit} {card.number['key']}")
+        if not self.dealer:
+            print('Total:', self.calc_value(), "\n")
 
-player_hand.add_card(deck.deal())
-dealer_hand.add_card(deck.deal())
 
-player_hand.calc_value()
-dealer_hand.calc_value()
+class Game():
+
+    def check_winner(self, player_hand, dealer_hand, game_over=False):
+        if not game_over:
+            if player_hand.calc_value() > 21:
+                print('あなたは21を超えました. Dealer wins!')
+                return True
+            elif dealer_hand.calc_value() > 21:
+                print('ディーラーは21を超えました. You win!')
+                return True
+            elif player_hand.is_blackjack() and dealer_hand.is_blackjack():
+                print('ふたりともブラックジャックです. Draw!')
+                return True
+            elif player_hand.is_blackjack():
+                print('あなたはブラックジャックです! You win!')
+                return True
+            elif dealer_hand.is_blackjack():
+                print('ディーラーはブラックジャックです! Dealer wins!')
+                return True
+        else:
+            if player_hand.calc_value() > dealer_hand.calc_value():
+                print('あなたの勝ちです')
+            elif player_hand.calc_value() == dealer_hand.calc_value():
+                print('引き分けです')
+            else:
+                print('残念，ディーラーの勝ちです')
+            return True
+        return False
+
+    def play(self):
+        game_to_play = 0
+        game_number = 0
+
+        while game_to_play <= 0:
+            try:
+                game_to_play = int(input('何回ゲームをプレーしますか？:'))
+
+            except ValueError:
+                print('数字で入力してください．')
+
+        while game_number < game_to_play:
+            game_number += 1
+
+            deck = Deck()
+            deck.shuffle()
+
+            player_hand = Hand()
+            dealer_hand = Hand(dealer=True)
+            for i in range(2):
+                player_hand.add_card(deck.deal())
+                dealer_hand.add_card(deck.deal())
+
+            print()
+            time.sleep(1.5)
+            print(f'ゲームの回数 {game_number}/{game_to_play}')
+            time.sleep(1)
+            print()
+
+            player_hand.show()
+            dealer_hand.show()
+
+            if self.check_winner(player_hand, dealer_hand):
+                continue
+            print('①　ヒットかスタンドの選択')
+
+            choice = ''
+            while choice not in ['s', 'stand'] and player_hand.calc_value() < 21:
+                choice = input('Hit または　Stand をしてください(H/S):').lower()
+                print()
+                while choice not in ['h', 's', 'hit', 'stand']:
+                    choice = input('Hit or Stand (H/S)を入力してください').lower()
+                    print()
+
+                if choice in ['hit', 'h']:
+                    player_hand.add_card(deck.deal())
+                    player_hand.show()
+
+            if self.check_winner(player_hand, dealer_hand):
+                continue
+            print('②　ディーラーは17までカードを引く')
+
+            while dealer_hand.calc_value() < 17:
+                dealer_hand.add_card(deck.deal())
+                dealer_hand.calc_value()
+                dealer_hand.show(show_two_cards=True)
+
+            if self.check_winner(player_hand, dealer_hand):
+                continue
+            print('③　結果発表')
+
+            print('Your hand:', player_hand.calc_value())
+            print('Dealer hand:', dealer_hand.calc_value())
+
+            self.check_winner(player_hand, dealer_hand, game_over=True)
+
+
+game = Game()
+game.play()
